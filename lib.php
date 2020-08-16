@@ -26,16 +26,18 @@ function local_messages_delete_extend_settings_navigation($settingsnav, $context
     global $PAGE;
 
     if (is_siteadmin()) {
-        if ($settingnode = $settingsnav->find('server', navigation_node::TYPE_SETTING)) {
-            $category = navigation_node::create(
-                'Расширенная очистка',
-                null,
-                navigation_node::TYPE_CATEGORY,
-                'dev_krsk_extend_clear',
-                'dev_krsk_extend_clear',
-                new pix_icon('i/settings', 'Расширенная очистка')
-            );
-            $settingnode->add_node($category);
+        if (!($settingnode = $settingsnav->find('dev_krsk_extend_clear', navigation_node::TYPE_CATEGORY))) {
+            if ($settingnode = $settingsnav->find('server', navigation_node::TYPE_SETTING)) {
+                $category = navigation_node::create(
+                    'Расширенная очистка',
+                    null,
+                    navigation_node::TYPE_CATEGORY,
+                    'dev_krsk_extend_clear',
+                    'dev_krsk_extend_clear',
+                    new pix_icon('i/settings', 'Расширенная очистка')
+                );
+                $settingnode->add_node($category);
+            }
         }
 
         if ($settingnode = $settingsnav->find('dev_krsk_extend_clear', navigation_node::TYPE_CATEGORY)) {
