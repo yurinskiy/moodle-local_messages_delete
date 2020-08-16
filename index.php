@@ -25,6 +25,18 @@
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/message/externallib.php');
 
+global $DB;
+
+/** Проверяем авторизован ли пользователь */
+require_login();
+
+/** Проверяем права пользователя */
+if (!is_siteadmin()) {
+    header('Location: ' . $CFG->wwwroot);
+    die();
+}
+
+$username = optional_param('username', $USER->username, PARAM_USERNAME);
 $deleted = optional_param('deleted', 0, PARAM_INT);
 
 $url = new moodle_url('/local/messages_delete/index.php');
@@ -39,52 +51,49 @@ $PAGE->set_pagelayout('admin');
 $PAGE->set_title($pagetitle);
 $PAGE->set_heading($pageheading);
 
-/** Проверяем авторизован ли пользователь */
-require_login();
-
-/** Идентификатор авторизованного пользователя */
-$userid = $USER->id;
-
-/** Проверяем права пользователя */
-if (!is_siteadmin()) {
-    header('Location: ' . $CFG->wwwroot);
-    die();
-}
-
 echo $OUTPUT->header();
 echo $OUTPUT->heading($pagetitle);
 
 if ($deleted) {
-	global $DB;
-
-	$sql = '
-	select m.id
-	  from {messages} m
-	 inner join {message_conversations} mc on mc.id= m.conversationid
-	 inner join {message_conversation_members} mcm on mcm.conversationid= mc.id
-	  left join {message_user_actions} ua on ua.messageid = m.id
-	 where m.useridfrom <> mcm.userid and (m.useridfrom = ? or mcm.userid = ?)
-	   and not exists(select 1 
-						from {message_user_actions} mua 
-					   where mua.messageid = m.id and mua.action = ? and mua.userid = ?)
-	';
-	$params = [ $userid, $userid, \core_message\api::MESSAGE_ACTION_DELETED , $userid ];
-
-	$messages = $DB->get_records_sql($sql, $params);
-
-	$result = 0;
-
-	foreach($messages as $message) {
-		if (\core_message_external::delete_message($message->id, $userid)) {
-			$result++;
-		}
-	}
+	$user_object = $DB->get_record('user', ['username' => $username], 'id');
 	
-	echo sprintf('<div class="alert alert-success">Удалено %s сообщений из %s</div>', $result, count($messages));
+	if ($user_object) {
+		$userid = $user_object->id;
+
+		$sql = '
+		select m.id
+		  from {messages} m
+		 inner join {message_conversations} mc on mc.id= m.conversationid
+		 inner join {message_conversation_members} mcm on mcm.conversationid= mc.id
+		  left join {message_user_actions} ua on ua.messageid = m.id
+		 where m.useridfrom <> mcm.userid and (m.useridfrom = ? or mcm.userid = ?)
+		   and not exists(select 1 
+							from {message_user_actions} mua 
+						   where mua.messageid = m.id and mua.action = ? and mua.userid = ?)
+		';
+		$params = [ $userid, $userid, \core_message\api::MESSAGE_ACTION_DELETED , $userid ];
+
+		$messages = $DB->get_records_sql($sql, $params);
+
+		$result = 0;
+
+		foreach($messages as $message) {
+			if (\core_message_external::delete_message($message->id, $userid)) {
+				$result++;
+			}
+		}
+		
+		echo sprintf('<div class="alert alert-success">Удалено %s сообщений из %s</div>', $result, count($messages));
+	}
+	else {
+		echo sprintf('<div class="alert alert-danger">Пользователь с логином %s не найден</div>', $username);
+	}
 }
 
-echo '<p>Вы уверены, что хотите удалить все ваши сообщения? Это не удалит их для других участников разговора.</p>';
-echo '<form method="POST"><input name="deleted" type="hidden" value="1" />';
+echo '<p>Введите имя пользователя, для которого хотите удалить сообщения. Это не удалит их для других участников разговора.</p>';
+echo '<form method="POST">
+<input name="username" type="text" placeholder="Введите логин пользователь..." value="' . $username . '">
+<input name="deleted" type="hidden" value="1" />';
 echo '<input type="submit" class="btn btn-primary" value="Удалить"></form>';
 
 echo $OUTPUT->footer();

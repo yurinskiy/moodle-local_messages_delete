@@ -29,7 +29,7 @@ $plugin->requires  = 2018120300;				// Moodle 3.6.0 is required.
 $plugin->supported = [36];   					// Moodle 3.6.x are supported. Available as of Moodle 3.9.0 or later.
 $plugin->incompatible = 37; 					// Moodle 3.7.x and later are incompatible. Available as of Moodle 3.9.0 or later.
 $plugin->component = 'local_messages_delete';	// Declare the type and name of this plugin. Required  as of Moodle 3.0 or later.
-$plugin->maturity = MATURITY_BETA;				// This is considered as ready for production sites.
+$plugin->maturity = MATURITY_STABLE;				// This is considered as ready for production sites.
 $plugin->release = '1.0.0';						// This is our first release.
 
 $plugin->dependencies = [
